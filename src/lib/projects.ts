@@ -1,4 +1,11 @@
-export type ProjectCategory = "Bathroom" | "Kitchen" | "Fireplace" | "Flooring";
+export type ProjectCategory =
+  | "Bathroom"
+  | "Kitchen"
+  | "Fireplace"
+  | "Flooring"
+  | "Roofing"
+  | "Exterior"
+  | "Windows";
 export type ProjectStatus = "progress" | "completed";
 
 export interface ProjectPhoto {
@@ -11,7 +18,15 @@ export interface ProjectPhoto {
   height: number;
 }
 
-export const CATEGORIES: ProjectCategory[] = ["Bathroom", "Kitchen", "Fireplace", "Flooring"];
+export const CATEGORIES: ProjectCategory[] = [
+  "Bathroom",
+  "Kitchen",
+  "Fireplace",
+  "Flooring",
+  "Roofing",
+  "Exterior",
+  "Windows",
+];
 
 export const PROJECT_PHOTOS: ProjectPhoto[] = [
   { id: "shower-01", src: "/projects/shower-01.jpeg", category: "Bathroom", status: "completed", title: "Herringbone-tiled corner shower", width: 1200, height: 1600 },
@@ -45,6 +60,21 @@ export const PROJECT_PHOTOS: ProjectPhoto[] = [
   { id: "fireplace-24", src: "/projects/fireplace-24.jpeg", category: "Fireplace", status: "progress", title: "Fireplace tile installation", width: 1200, height: 1600 },
   { id: "fireplace-15", src: "/projects/fireplace-15.jpeg", category: "Fireplace", status: "progress", title: "Patterned tile fireplace surround", width: 1200, height: 1600 },
   { id: "flooring-27", src: "/projects/flooring-27.jpeg", category: "Flooring", status: "progress", title: "Marble-look flooring installation", width: 1200, height: 1600 },
+
+  { id: "roofing-01", src: "/projects/roofing-01.jpeg", category: "Roofing", status: "progress", title: "Roof re-deck with synthetic underlayment", width: 1600, height: 1200 },
+  { id: "roofing-02", src: "/projects/roofing-02.jpeg", category: "Roofing", status: "progress", title: "Underlayment install — hip and ridge prep", width: 1200, height: 1600 },
+  { id: "roofing-03", src: "/projects/roofing-03.jpeg", category: "Roofing", status: "completed", title: "Finished shingle roof — ridge cap detail", width: 768, height: 1024 },
+  { id: "roofing-04", src: "/projects/roofing-04.jpeg", category: "Roofing", status: "completed", title: "Finished shingle roof — hip and valley", width: 768, height: 1024 },
+
+  { id: "window-01", src: "/projects/window-01.jpeg", category: "Windows", status: "progress", title: "Window opening prepped with weather barrier", width: 1200, height: 1600 },
+  { id: "window-02", src: "/projects/window-02.jpeg", category: "Windows", status: "completed", title: "New privacy-glass window, installed and trimmed", width: 1200, height: 1600 },
+
+  { id: "exterior-damage-01", src: "/projects/exterior-damage-01.jpeg", category: "Exterior", status: "progress", title: "Rot damage found behind old siding", width: 1200, height: 1600 },
+  { id: "exterior-damage-02", src: "/projects/exterior-damage-02.jpeg", category: "Exterior", status: "progress", title: "Wall opened up for structural repair", width: 1200, height: 1600 },
+  { id: "exterior-framing-01", src: "/projects/exterior-framing-01.jpeg", category: "Exterior", status: "completed", title: "New framing and window, ready for siding", width: 1200, height: 1600 },
+  { id: "exterior-paint-before-01", src: "/projects/exterior-paint-before-01.jpeg", category: "Exterior", status: "progress", title: "Exterior before repaint", width: 1200, height: 1600 },
+  { id: "exterior-paint-after-01", src: "/projects/exterior-paint-after-01.jpeg", category: "Exterior", status: "completed", title: "Exterior after repaint — side elevation", width: 1200, height: 1600 },
+  { id: "exterior-paint-after-02", src: "/projects/exterior-paint-after-02.jpeg", category: "Exterior", status: "completed", title: "Exterior after repaint — front elevation", width: 1200, height: 1600 },
 ];
 
 export interface ProgressPair {
@@ -57,4 +87,40 @@ export interface ProgressPair {
 export const PROGRESS_PAIRS: ProgressPair[] = [
   { id: "onyx-shower", title: "Black Marble Shower — Tile Installation", before: "shower-05", after: "shower-04" },
   { id: "hex-mosaic-shower", title: "Hex Mosaic Shower — Tile Installation", before: "shower-11", after: "shower-10" },
+];
+
+export interface Transformation {
+  id: string;
+  tag: string;
+  title: string;
+  description: string;
+  before: string;
+  after: string;
+  beforeLabel: string;
+  afterLabel: string;
+}
+
+export const TRANSFORMATIONS: Transformation[] = [
+  {
+    id: "exterior-repaint",
+    tag: "Exterior Painting",
+    title: "A Full Exterior Color Transformation",
+    description:
+      "Faded, sun-worn siding refreshed with a modern color scheme — new paint, clean lines, instant curb appeal.",
+    before: "exterior-paint-before-01",
+    after: "exterior-paint-after-01",
+    beforeLabel: "Before",
+    afterLabel: "After",
+  },
+  {
+    id: "structural-rebuild",
+    tag: "Structural Repair",
+    title: "Rot Repair, Reframed From the Studs Out",
+    description:
+      "Hidden water damage and rotted framing removed entirely, then rebuilt to code with new studs and a new window — before it's closed back up with siding.",
+    before: "exterior-damage-02",
+    after: "exterior-framing-01",
+    beforeLabel: "Damage Found",
+    afterLabel: "Rebuilt",
+  },
 ];

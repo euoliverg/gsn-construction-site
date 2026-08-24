@@ -5,6 +5,7 @@ import TrustBar from "./components/TrustBar";
 import Services from "./components/Services";
 import ServiceSelector from "./components/ServiceSelector";
 import ProjectGallery from "./components/ProjectGallery";
+import Transformations from "./components/Transformations";
 import WhyChooseGSN from "./components/WhyChooseGSN";
 import About from "./components/About";
 import Process from "./components/Process";
@@ -27,6 +28,7 @@ export default function App() {
         <Services />
         <ServiceSelector />
         <ProjectGallery />
+        <Transformations />
         <WhyChooseGSN />
         <About />
         <Process />
