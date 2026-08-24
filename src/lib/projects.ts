@@ -69,12 +69,12 @@ export const PROJECT_PHOTOS: ProjectPhoto[] = [
   { id: "window-01", src: "/projects/window-01.jpeg", category: "Windows", status: "progress", title: "Window opening prepped with weather barrier", width: 1200, height: 1600 },
   { id: "window-02", src: "/projects/window-02.jpeg", category: "Windows", status: "completed", title: "New privacy-glass window, installed and trimmed", width: 1200, height: 1600 },
 
-  { id: "exterior-damage-01", src: "/projects/exterior-damage-01.jpeg", category: "Exterior", status: "progress", title: "Rot damage found behind old siding", width: 1200, height: 1600 },
-  { id: "exterior-damage-02", src: "/projects/exterior-damage-02.jpeg", category: "Exterior", status: "progress", title: "Wall opened up for structural repair", width: 1200, height: 1600 },
-  { id: "exterior-framing-01", src: "/projects/exterior-framing-01.jpeg", category: "Exterior", status: "completed", title: "New framing and window, ready for siding", width: 1200, height: 1600 },
-  { id: "exterior-paint-before-01", src: "/projects/exterior-paint-before-01.jpeg", category: "Exterior", status: "progress", title: "Exterior before repaint", width: 1200, height: 1600 },
-  { id: "exterior-paint-after-01", src: "/projects/exterior-paint-after-01.jpeg", category: "Exterior", status: "completed", title: "Exterior after repaint — side elevation", width: 1200, height: 1600 },
-  { id: "exterior-paint-after-02", src: "/projects/exterior-paint-after-02.jpeg", category: "Exterior", status: "completed", title: "Exterior after repaint — front elevation", width: 1200, height: 1600 },
+  { id: "exterior-damage-02", src: "/projects/exterior-damage-02.jpeg", category: "Exterior", status: "progress", title: "Rot damage found behind old siding", width: 1200, height: 1600 },
+  { id: "exterior-damage-01", src: "/projects/exterior-damage-01.jpeg", category: "Exterior", status: "progress", title: "Wall opened up for structural repair", width: 1200, height: 1600 },
+  { id: "exterior-framing-01", src: "/projects/exterior-framing-01.jpeg", category: "Exterior", status: "progress", title: "New framing and window, ready for siding", width: 1200, height: 1600 },
+  { id: "exterior-siding-01", src: "/projects/exterior-siding-01.jpeg", category: "Exterior", status: "completed", title: "Exterior siding and trim — side elevation", width: 1200, height: 1600 },
+  { id: "exterior-siding-02", src: "/projects/exterior-siding-02.jpeg", category: "Exterior", status: "completed", title: "Exterior siding and trim — rear corner", width: 1200, height: 1600 },
+  { id: "exterior-siding-03", src: "/projects/exterior-siding-03.jpeg", category: "Exterior", status: "completed", title: "Exterior siding and trim — front elevation", width: 1200, height: 1600 },
 ];
 
 export interface ProgressPair {
@@ -89,7 +89,12 @@ export const PROGRESS_PAIRS: ProgressPair[] = [
   { id: "hex-mosaic-shower", title: "Hex Mosaic Shower — Tile Installation", before: "shower-11", after: "shower-10" },
 ];
 
-export interface Transformation {
+/**
+ * Featured job shown with the drag-to-compare slider. Both photos must be the
+ * same wall from the same vantage point, otherwise dragging the handle reads as
+ * a camera jump rather than a change in the work.
+ */
+export interface FeaturedRepair {
   id: string;
   tag: string;
   title: string;
@@ -98,29 +103,26 @@ export interface Transformation {
   after: string;
   beforeLabel: string;
   afterLabel: string;
+  detail: string;
+  scope: string[];
 }
 
-export const TRANSFORMATIONS: Transformation[] = [
-  {
-    id: "exterior-repaint",
-    tag: "Exterior Painting",
-    title: "A Full Exterior Color Transformation",
-    description:
-      "Faded, sun-worn siding refreshed with a modern color scheme — new paint, clean lines, instant curb appeal.",
-    before: "exterior-paint-before-01",
-    after: "exterior-paint-after-01",
-    beforeLabel: "Before",
-    afterLabel: "After",
-  },
-  {
-    id: "structural-rebuild",
-    tag: "Structural Repair",
-    title: "Rot Repair, Reframed From the Studs Out",
-    description:
-      "Hidden water damage and rotted framing removed entirely, then rebuilt to code with new studs and a new window — before it's closed back up with siding.",
-    before: "exterior-damage-02",
-    after: "exterior-framing-01",
-    beforeLabel: "Damage Found",
-    afterLabel: "Rebuilt",
-  },
-];
+export const FEATURED_REPAIR: FeaturedRepair = {
+  id: "structural-rebuild",
+  tag: "Structural Repair",
+  title: "What We Find Behind the Siding",
+  description:
+    "On this job the old siding was hiding rotted sheathing and framing. Rather than cover it back up, the damaged section was cut out and the wall was rebuilt from the studs out.",
+  before: "exterior-damage-01",
+  after: "exterior-framing-01",
+  beforeLabel: "Damage Found",
+  afterLabel: "Rebuilt",
+  detail: "exterior-damage-02",
+  scope: [
+    "Rotted sheathing and framing cut out and removed",
+    "Damaged studs replaced with new framing lumber",
+    "New window unit set into the rebuilt opening",
+    "Roof edge kept covered while the wall was open",
+    "Wall left square and ready for sheathing and siding",
+  ],
+};

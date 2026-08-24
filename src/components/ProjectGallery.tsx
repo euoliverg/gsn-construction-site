@@ -3,7 +3,13 @@ import { Maximize2 } from "lucide-react";
 import Reveal from "./Reveal";
 import BeforeAfterSlider from "./BeforeAfterSlider";
 import Lightbox from "./Lightbox";
-import { CATEGORIES, PROJECT_PHOTOS, PROGRESS_PAIRS, type ProjectCategory } from "../lib/projects";
+import {
+  CATEGORIES,
+  PROJECT_PHOTOS,
+  PROGRESS_PAIRS,
+  type ProjectCategory,
+  type ProjectPhoto,
+} from "../lib/projects";
 
 type Filter = "All" | ProjectCategory;
 
@@ -11,14 +17,35 @@ function findPhoto(id: string) {
   return PROJECT_PHOTOS.find((p) => p.id === id)!;
 }
 
+/**
+ * Deals photos out one category at a time so a single trade can't dominate the
+ * top of the grid — bathroom work outnumbers everything else roughly 4 to 1.
+ */
+function interleaveByCategory(photos: ProjectPhoto[]): ProjectPhoto[] {
+  const buckets = CATEGORIES.map((c) => photos.filter((p) => p.category === c)).filter(
+    (b) => b.length > 0,
+  );
+  const out: ProjectPhoto[] = [];
+  for (let i = 0; buckets.some((b) => i < b.length); i++) {
+    for (const bucket of buckets) {
+      if (i < bucket.length) out.push(bucket[i]);
+    }
+  }
+  return out;
+}
+
 export default function ProjectGallery() {
   const [filter, setFilter] = useState<Filter>("All");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const filtered = useMemo(
-    () => (filter === "All" ? PROJECT_PHOTOS : PROJECT_PHOTOS.filter((p) => p.category === filter)),
-    [filter],
-  );
+  const filtered = useMemo(() => {
+    if (filter !== "All") return PROJECT_PHOTOS.filter((p) => p.category === filter);
+    // Lead with finished work across every trade, then the in-progress shots.
+    return [
+      ...interleaveByCategory(PROJECT_PHOTOS.filter((p) => p.status === "completed")),
+      ...interleaveByCategory(PROJECT_PHOTOS.filter((p) => p.status === "progress")),
+    ];
+  }, [filter]);
 
   return (
     <section id="projects" className="bg-white py-24 sm:py-28">
@@ -55,7 +82,11 @@ export default function ProjectGallery() {
             <button
               key={cat}
               type="button"
-              onClick={() => setFilter(cat)}
+              onClick={() => {
+                setFilter(cat);
+                // Indexes point into `filtered`, so they'd dangle after a change.
+                setLightboxIndex(null);
+              }}
               aria-pressed={filter === cat}
               className={`rounded-full border px-5 py-2.5 text-sm font-semibold transition-all ${
                 filter === cat
@@ -71,12 +102,11 @@ export default function ProjectGallery() {
         {/* Photo grid */}
         <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {filtered.map((photo, i) => {
-            const globalIndex = PROJECT_PHOTOS.indexOf(photo);
             return (
               <Reveal key={photo.id} delay={(i % 8) * 40}>
                 <button
                   type="button"
-                  onClick={() => setLightboxIndex(globalIndex)}
+                  onClick={() => setLightboxIndex(i)}
                   className="group relative block aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100 text-left"
                 >
                   <img
@@ -115,7 +145,7 @@ export default function ProjectGallery() {
 
       {lightboxIndex !== null && (
         <Lightbox
-          photos={PROJECT_PHOTOS}
+          photos={filtered}
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onNavigate={setLightboxIndex}

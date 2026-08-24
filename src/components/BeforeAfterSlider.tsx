@@ -6,6 +6,12 @@ interface BeforeAfterSliderProps {
   beforeLabel?: string;
   afterLabel?: string;
   alt: string;
+  /**
+   * Aspect ratio of the frame. Both photos are cropped with object-cover to
+   * fill it, so pass the ratio the source photos were shot at to avoid losing
+   * the top and bottom of a portrait shot.
+   */
+  aspectClass?: string;
 }
 
 export default function BeforeAfterSlider({
@@ -14,6 +20,7 @@ export default function BeforeAfterSlider({
   beforeLabel = "In Progress",
   afterLabel = "Completed",
   alt,
+  aspectClass = "aspect-[3/4] sm:aspect-[4/3]",
 }: BeforeAfterSliderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState(50);
@@ -48,7 +55,7 @@ export default function BeforeAfterSlider({
   return (
     <div
       ref={containerRef}
-      className="relative aspect-[3/4] sm:aspect-[4/3] w-full select-none overflow-hidden rounded-2xl shadow-elevated touch-none"
+      className={`relative ${aspectClass} w-full select-none overflow-hidden rounded-2xl shadow-elevated touch-none`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
