@@ -1,8 +1,10 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -181,4 +183,12 @@ export async function markConversationRead(conversationId: string, who: "admin" 
 export async function setConversationStatus(conversationId: string, status: "open" | "closed") {
   if (!db) return;
   await updateDoc(doc(db, "conversations", conversationId), { status });
+}
+
+/** Permanently deletes a conversation and all of its messages. Employee-only (see firestore.rules). */
+export async function deleteConversation(conversationId: string) {
+  if (!db) return;
+  const messagesSnap = await getDocs(collection(db, "conversations", conversationId, "messages"));
+  await Promise.all(messagesSnap.docs.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(doc(db, "conversations", conversationId));
 }

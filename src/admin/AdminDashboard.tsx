@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { signOut, type User } from "firebase/auth";
-import { ArrowLeft, CheckCircle2, LogOut, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LogOut, Send, Trash2 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import {
+  deleteConversation,
   markConversationRead,
   sendMessage,
   setConversationStatus,
@@ -29,6 +30,8 @@ export default function AdminDashboard({ user }: { user: User }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => subscribeToConversations(setConversations), []);
@@ -55,6 +58,20 @@ export default function AdminDashboard({ user }: { user: User }) {
     if (!text || !activeId) return;
     setDraft("");
     await sendMessage(activeId, text, "admin", user.email ?? "Team");
+  };
+
+  const confirmTarget = conversations.find((c) => c.id === confirmDeleteId) ?? null;
+
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return;
+    setDeleting(true);
+    try {
+      await deleteConversation(confirmDeleteId);
+      if (activeId === confirmDeleteId) setActiveId(null);
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteId(null);
+    }
   };
 
   const listVisible = !activeId;
@@ -85,27 +102,38 @@ export default function AdminDashboard({ user }: { user: User }) {
             <p className="px-4 py-6 text-center text-sm text-gray-400">Nenhuma conversa ainda.</p>
           )}
           {conversations.map((c) => (
-            <button
+            <div
               key={c.id}
-              type="button"
-              onClick={() => setActiveId(c.id)}
-              className={`flex w-full flex-col gap-0.5 border-b border-gray-50 px-4 py-3 text-left transition-colors hover:bg-blue-100/40 ${
+              className={`group relative border-b border-gray-50 transition-colors hover:bg-blue-100/40 ${
                 activeId === c.id ? "bg-blue-100/60" : ""
               }`}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-navy-900">{c.visitorName}</span>
-                <span className="text-[11px] text-gray-400">{timeAgo(c.lastMessageAt)}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-xs text-gray-500">{c.lastMessageText || "Nova conversa"}</span>
-                {c.unreadByAdmin > 0 && (
-                  <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white">
-                    {c.unreadByAdmin}
-                  </span>
-                )}
-              </div>
-            </button>
+              <button type="button" onClick={() => setActiveId(c.id)} className="flex w-full flex-col gap-0.5 px-4 py-3 pr-11 text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-navy-900">{c.visitorName}</span>
+                  <span className="text-[11px] text-gray-400">{timeAgo(c.lastMessageAt)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-xs text-gray-500">{c.lastMessageText || "Nova conversa"}</span>
+                  {c.unreadByAdmin > 0 && (
+                    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white">
+                      {c.unreadByAdmin}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDeleteId(c.id);
+                }}
+                aria-label={`Excluir conversa com ${c.visitorName}`}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-md text-gray-300 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           ))}
         </div>
       </aside>
@@ -133,14 +161,24 @@ export default function AdminDashboard({ user }: { user: User }) {
                   <p className="text-xs text-gray-400">{active.status === "open" ? "Aberta" : "Fechada"}</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setConversationStatus(active.id, active.status === "open" ? "closed" : "open")}
-                className="flex items-center gap-1.5 rounded-lg border border-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600"
-              >
-                <CheckCircle2 size={14} />
-                {active.status === "open" ? "Marcar como fechada" : "Reabrir"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConversationStatus(active.id, active.status === "open" ? "closed" : "open")}
+                  className="flex items-center gap-1.5 rounded-lg border border-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600"
+                >
+                  <CheckCircle2 size={14} />
+                  {active.status === "open" ? "Marcar como fechada" : "Reabrir"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(active.id)}
+                  aria-label="Excluir conversa"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-100 text-gray-500 hover:border-red-300 hover:text-red-600"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
 
             <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto px-4 py-4">
@@ -181,6 +219,40 @@ export default function AdminDashboard({ user }: { user: User }) {
           </>
         )}
       </section>
+
+      {confirmTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/50 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated">
+            <h3 className="font-display text-base font-bold text-navy-900">Excluir conversa?</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              Isso vai apagar permanentemente a conversa com <strong>{confirmTarget.visitorName}</strong> e
+              todas as mensagens. Essa ação não pode ser desfeita.
+            </p>
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={deleting}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60"
+              >
+                {deleting ? "Excluindo…" : "Excluir"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
