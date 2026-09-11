@@ -17,6 +17,7 @@ import FinalCTA from "./components/FinalCTA";
 import Footer from "./components/Footer";
 import MobileStickyBar from "./components/MobileStickyBar";
 import FloatingCallButton from "./components/FloatingCallButton";
+import ChatWidget from "./components/ChatWidget";
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
       </main>
       <Footer />
       <FloatingCallButton />
+      <ChatWidget />
       <MobileStickyBar />
       <div className="lg:hidden h-[68px]" aria-hidden="true" />
     </ServiceSelectionProvider>
