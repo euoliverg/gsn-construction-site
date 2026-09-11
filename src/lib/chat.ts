@@ -36,20 +36,12 @@ export interface Conversation {
   createdAt: number | null;
 }
 
-const VISITOR_ID_KEY = "gsn_chat_visitor_id";
-
-export function getVisitorId(): string {
-  let id = localStorage.getItem(VISITOR_ID_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(VISITOR_ID_KEY, id);
-  }
-  return id;
-}
-
-export async function getOrCreateConversation(visitorName: string): Promise<string> {
+export async function getOrCreateConversation(visitorName: string, uid: string): Promise<string> {
   if (!db) throw new Error("Chat is not configured.");
-  const conversationId = getVisitorId();
+  // The conversation id IS the visitor's anonymous Firebase Auth uid — this is
+  // what the Firestore security rules check to scope a visitor to their own
+  // conversation (see isOwningVisitor in firestore.rules).
+  const conversationId = uid;
   const ref = doc(db, "conversations", conversationId);
   await setDoc(
     ref,
