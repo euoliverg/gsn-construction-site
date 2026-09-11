@@ -90,15 +90,24 @@ export async function sendMessage(
     createdAt: serverTimestamp(),
   });
 
-  await updateDoc(doc(db, "conversations", conversationId), {
-    // Keep the conversation preview in Portuguese for the admin list.
-    lastMessageText: sender === "visitor" ? translatedText : trimmed,
-    lastMessageAt: serverTimestamp(),
-    status: "open",
-    ...(sender === "visitor"
-      ? { unreadByAdmin: increment(1) }
-      : { unreadByVisitor: increment(1) }),
-  });
+  // setDoc/merge rather than updateDoc: if an employee deleted this
+  // conversation while the visitor still had the widget open, updateDoc
+  // would throw and the message would be stranded in a subcollection with
+  // no parent — invisible in the admin list. Merging recreates the
+  // conversation so the new message still reaches the team.
+  await setDoc(
+    doc(db, "conversations", conversationId),
+    {
+      // Keep the conversation preview in Portuguese for the admin list.
+      lastMessageText: sender === "visitor" ? translatedText : trimmed,
+      lastMessageAt: serverTimestamp(),
+      status: "open",
+      ...(sender === "visitor"
+        ? { unreadByAdmin: increment(1) }
+        : { unreadByVisitor: increment(1) }),
+    },
+    { merge: true }
+  );
 }
 
 export function subscribeToMessages(
@@ -173,16 +182,27 @@ export function subscribeToConversations(cb: (conversations: Conversation[]) => 
   });
 }
 
+// These two fire from UI effects without an await, so a conversation that
+// was deleted in the meantime must not surface as an unhandled rejection —
+// there's simply nothing left to mark or reopen.
 export async function markConversationRead(conversationId: string, who: "admin" | "visitor") {
   if (!db) return;
-  await updateDoc(doc(db, "conversations", conversationId), {
-    [who === "admin" ? "unreadByAdmin" : "unreadByVisitor"]: 0,
-  });
+  try {
+    await updateDoc(doc(db, "conversations", conversationId), {
+      [who === "admin" ? "unreadByAdmin" : "unreadByVisitor"]: 0,
+    });
+  } catch {
+    /* conversation no longer exists */
+  }
 }
 
 export async function setConversationStatus(conversationId: string, status: "open" | "closed") {
   if (!db) return;
-  await updateDoc(doc(db, "conversations", conversationId), { status });
+  try {
+    await updateDoc(doc(db, "conversations", conversationId), { status });
+  } catch {
+    /* conversation no longer exists */
+  }
 }
 
 /** Permanently deletes a conversation and all of its messages. Employee-only (see firestore.rules). */

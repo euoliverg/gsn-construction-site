@@ -28,8 +28,6 @@ export default function ChatWidget() {
   const autoSentRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  if (!isFirebaseConfigured) return null;
-
   // A form elsewhere on the site (e.g. the estimate request) can hand the
   // visitor straight into a pre-filled chat via ChatContext.openChatWith().
   useEffect(() => {
@@ -60,7 +58,7 @@ export default function ChatWidget() {
   // Kicks off as soon as the name is submitted — not gated on the widget being
   // open — so replies can be tracked (for the unread badge) even while closed.
   useEffect(() => {
-    if (!nameSubmitted || conversationId) return;
+    if (!isFirebaseConfigured || !nameSubmitted || conversationId) return;
     let cancelled = false;
 
     (async () => {
@@ -139,6 +137,10 @@ export default function ChatWidget() {
       setSending(false);
     }
   };
+
+  // Rendered as nothing until the Firebase env vars are set. Checked here,
+  // after every hook, so hook order stays identical on every render.
+  if (!isFirebaseConfigured) return null;
 
   return (
     <>

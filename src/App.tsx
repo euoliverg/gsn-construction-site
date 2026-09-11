@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ServiceSelectionProvider } from "./context/ServiceSelectionContext";
 import { ChatProvider } from "./context/ChatContext";
 import Layout from "./components/Layout";
@@ -11,9 +11,12 @@ import ContactPage from "./pages/ContactPage";
 
 export default function App() {
   return (
-    <ServiceSelectionProvider>
-      <ChatProvider>
-        <BrowserRouter>
+    // Router wraps the providers so they can navigate (picking a service
+    // sends the visitor to the estimate form on /contact) while still
+    // keeping their state across route changes.
+    <BrowserRouter>
+      <ServiceSelectionProvider>
+        <ChatProvider>
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<Home />} />
@@ -22,10 +25,13 @@ export default function App() {
               <Route path="about" element={<AboutPage />} />
               <Route path="service-area" element={<ServiceAreaPage />} />
               <Route path="contact" element={<ContactPage />} />
+              {/* Any unknown URL (the host serves index.html for everything)
+                  lands on the homepage instead of a blank page. */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
-        </BrowserRouter>
-      </ChatProvider>
-    </ServiceSelectionProvider>
+        </ChatProvider>
+      </ServiceSelectionProvider>
+    </BrowserRouter>
   );
 }
