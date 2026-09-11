@@ -31,10 +31,9 @@ export default function ChatWidget() {
 
     (async () => {
       try {
-        if (auth && !auth.currentUser) {
-          await signInAnonymously(auth);
-        }
-        const id = await getOrCreateConversation(name || "Visitor");
+        if (!auth) throw new Error("Chat is not configured.");
+        const user = auth.currentUser ?? (await signInAnonymously(auth)).user;
+        const id = await getOrCreateConversation(name || "Visitor", user.uid);
         if (!cancelled) {
           setConversationId(id);
           setReady(true);
