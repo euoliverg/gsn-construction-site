@@ -6,6 +6,7 @@ import {
   getOrCreateConversation,
   markConversationRead,
   sendMessage,
+  subscribeToConversation,
   subscribeToMessages,
   type ChatMessage,
 } from "../lib/chat";
@@ -19,14 +20,18 @@ export default function ChatWidget() {
   const [nameSubmitted, setNameSubmitted] = useState(() => Boolean(localStorage.getItem(NAME_KEY)));
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [unreadByVisitor, setUnreadByVisitor] = useState(0);
   const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   if (!isFirebaseConfigured) return null;
 
   // Sign the visitor in anonymously once, then create/load their conversation.
+  // Kicks off as soon as the name is submitted — not gated on the widget being
+  // open — so replies can be tracked (for the unread badge) even while closed.
   useEffect(() => {
-    if (!open || !nameSubmitted || conversationId) return;
+    if (!nameSubmitted || conversationId) return;
     let cancelled = false;
 
     (async () => {
@@ -46,7 +51,7 @@ export default function ChatWidget() {
     return () => {
       cancelled = true;
     };
-  }, [open, nameSubmitted, name, conversationId]);
+  }, [nameSubmitted, name, conversationId]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -54,15 +59,24 @@ export default function ChatWidget() {
     return unsub;
   }, [conversationId]);
 
+  // Track unread replies so the bubble can badge itself even while closed.
   useEffect(() => {
-    if (open && conversationId) {
-      markConversationRead(conversationId, "visitor");
-    }
-  }, [open, conversationId, messages.length]);
+    if (!conversationId) return;
+    const unsub = subscribeToConversation(conversationId, (conv) => {
+      setUnreadByVisitor(conv?.unreadByVisitor ?? 0);
+    });
+    return unsub;
+  }, [conversationId]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    if (open && conversationId && unreadByVisitor > 0) {
+      markConversationRead(conversationId, "visitor");
+    }
+  }, [open, conversationId, unreadByVisitor]);
+
+  useEffect(() => {
+    if (open) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, open]);
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,12 +89,15 @@ export default function ChatWidget() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || !conversationId) return;
+    if (!text || !conversationId || sending) return;
     setDraft("");
+    setSending(true);
     try {
       await sendMessage(conversationId, text, "visitor");
     } catch (err) {
       console.error("Send failed", err);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -89,18 +106,26 @@ export default function ChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close chat" : "Open chat"}
+        aria-label={open ? "Close chat" : unreadByVisitor > 0 ? `Open chat — ${unreadByVisitor} new message${unreadByVisitor > 1 ? "s" : ""}` : "Open chat"}
         className="fixed bottom-24 left-4 lg:bottom-8 lg:left-8 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-elevated transition-transform duration-300 hover:-translate-y-1 hover:bg-blue-500"
       >
+        {!open && unreadByVisitor > 0 && (
+          <>
+            <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white ring-2 ring-white">
+              {unreadByVisitor > 9 ? "9+" : unreadByVisitor}
+            </span>
+            <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-75" aria-hidden="true" />
+          </>
+        )}
         {open ? <X size={22} /> : <MessageCircle size={22} />}
       </button>
 
       {open && (
-        <div className="fixed bottom-40 left-4 right-4 lg:bottom-24 lg:left-8 lg:right-auto z-50 flex h-[70vh] max-h-[520px] w-auto lg:w-[360px] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-elevated">
+        <div className="fixed bottom-40 left-4 right-4 lg:bottom-24 lg:left-8 lg:right-auto z-50 flex h-[70vh] max-h-[520px] w-auto lg:w-[360px] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-elevated animate-fade-up">
           <div className="flex items-center justify-between bg-navy-900 px-4 py-3.5 text-white">
             <div>
               <p className="font-display text-sm font-semibold">GSN Construction</p>
-              <p className="text-xs text-blue-300">We typically reply within a few hours</p>
+              <p className="text-xs text-blue-300">👋 We typically reply within a few hours</p>
             </div>
             <button
               type="button"
@@ -115,7 +140,7 @@ export default function ChatWidget() {
           {!nameSubmitted ? (
             <form onSubmit={handleNameSubmit} className="flex flex-1 flex-col justify-center gap-3 px-5">
               <p className="text-sm text-gray-700">
-                Tell us your name to start chatting with our team.
+                Hi! What's your name? We'll use it to say hello properly. 😊
               </p>
               <input
                 autoFocus
@@ -126,7 +151,8 @@ export default function ChatWidget() {
               />
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
+                disabled={!name.trim()}
+                className="rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-40"
               >
                 Start chat
               </button>
@@ -138,9 +164,12 @@ export default function ChatWidget() {
                   <p className="text-center text-xs text-gray-400">Connecting…</p>
                 )}
                 {ready && messages.length === 0 && (
-                  <p className="text-center text-xs text-gray-400">
-                    Send us a message and a team member will respond here.
-                  </p>
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-gray-100 bg-white px-3.5 py-2.5 text-sm leading-snug text-navy-900">
+                      Hey {name.split(" ")[0]}! 👋 Ask us anything about your project — roofing,
+                      remodeling, painting, whatever you need. We'll get back to you soon.
+                    </div>
+                  </div>
                 )}
                 {messages.map((m) => (
                   <div
@@ -161,10 +190,22 @@ export default function ChatWidget() {
                     </div>
                   </div>
                 ))}
+                {sending && (
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-blue-600/60 px-3.5 py-2 text-sm text-white">
+                      <span className="inline-flex gap-1 align-middle">
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/80 [animation-delay:-0.2s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/80 [animation-delay:-0.1s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/80" />
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-100 bg-white p-2.5">
                 <input
+                  autoFocus
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   placeholder="Type a message…"
@@ -173,7 +214,7 @@ export default function ChatWidget() {
                 />
                 <button
                   type="submit"
-                  disabled={!ready || !draft.trim()}
+                  disabled={!ready || !draft.trim() || sending}
                   aria-label="Send message"
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white transition-colors hover:bg-blue-500 disabled:opacity-40"
                 >
