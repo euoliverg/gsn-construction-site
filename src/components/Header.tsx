@@ -6,12 +6,35 @@ import { NAV_LINKS, PHONE_NUMBERS } from "../lib/constants";
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeHref, setActiveHref] = useState("#home");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Highlight whichever nav section is currently in view, so the menu always
+  // reflects where you actually are on the page.
+  useEffect(() => {
+    const sections = NAV_LINKS.map((link) => document.querySelector(link.href)).filter(
+      (el): el is Element => el !== null
+    );
+    if (sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length === 0) return;
+        // Prefer the one closest to the top of the viewport.
+        const topMost = visible.reduce((a, b) => (a.boundingClientRect.top <= b.boundingClientRect.top ? a : b));
+        setActiveHref(`#${topMost.target.id}`);
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+    sections.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -47,16 +70,26 @@ export default function Header() {
         </a>
 
         <nav className="hidden lg:flex items-center gap-9" aria-label="Primary">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-white/85 hover:text-white transition-colors relative group"
-            >
-              {link.label}
-              <span className="absolute -bottom-1.5 left-0 h-px w-0 bg-blue-400 transition-all duration-300 group-hover:w-full" />
-            </a>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const active = activeHref === link.href;
+            return (
+              <a
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "true" : undefined}
+                className={`text-sm font-medium transition-colors relative group ${
+                  active ? "text-white" : "text-white/85 hover:text-white"
+                }`}
+              >
+                {link.label}
+                <span
+                  className={`absolute -bottom-1.5 left-0 h-px bg-blue-400 transition-all duration-300 ${
+                    active ? "w-full" : "w-0 group-hover:w-full"
+                  }`}
+                />
+              </a>
+            );
+          })}
         </nav>
 
         <div className="hidden xl:flex items-center gap-4 divide-x divide-white/15">
@@ -104,7 +137,10 @@ export default function Header() {
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className="text-lg font-medium text-white py-4 border-b border-white/10"
+              aria-current={activeHref === link.href ? "true" : undefined}
+              className={`text-lg font-medium py-4 border-b border-white/10 ${
+                activeHref === link.href ? "text-blue-300" : "text-white"
+              }`}
             >
               {link.label}
             </a>

@@ -23,9 +23,21 @@ export default function ChatWidget() {
   const [unreadByVisitor, setUnreadByVisitor] = useState(0);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [attract, setAttract] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   if (!isFirebaseConfigured) return null;
+
+  // Give the bubble a brief bounce shortly after the page loads to catch a
+  // first-time visitor's eye, then settle down.
+  useEffect(() => {
+    const start = setTimeout(() => setAttract(true), 1800);
+    const stop = setTimeout(() => setAttract(false), 1800 + 2600);
+    return () => {
+      clearTimeout(start);
+      clearTimeout(stop);
+    };
+  }, []);
 
   // Sign the visitor in anonymously once, then create/load their conversation.
   // Kicks off as soon as the name is submitted — not gated on the widget being
@@ -107,7 +119,9 @@ export default function ChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close chat" : unreadByVisitor > 0 ? `Open chat — ${unreadByVisitor} new message${unreadByVisitor > 1 ? "s" : ""}` : "Open chat"}
-        className="fixed bottom-24 left-4 lg:bottom-8 lg:left-8 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-elevated transition-transform duration-300 hover:-translate-y-1 hover:bg-blue-500"
+        className={`fixed bottom-24 left-4 lg:bottom-8 lg:left-8 z-50 flex h-14 items-center justify-center gap-2.5 rounded-full bg-blue-600 text-white shadow-elevated transition-all duration-300 hover:-translate-y-1 hover:bg-blue-500 ${
+          open ? "w-14" : "px-4 sm:pr-5"
+        } ${attract && !open ? "animate-bounce" : ""}`}
       >
         {!open && unreadByVisitor > 0 && (
           <>
@@ -117,7 +131,10 @@ export default function ChatWidget() {
             <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-75" aria-hidden="true" />
           </>
         )}
-        {open ? <X size={22} /> : <MessageCircle size={22} />}
+        {open ? <X size={22} /> : <MessageCircle size={22} className="shrink-0" />}
+        {!open && (
+          <span className="hidden sm:inline text-sm font-semibold whitespace-nowrap">Chat with us</span>
+        )}
       </button>
 
       {open && (
