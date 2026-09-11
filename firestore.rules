@@ -28,7 +28,9 @@ service cloud.firestore {
 
       allow create, update: if isEmployee() || isOwningVisitor(conversationId);
 
-      allow delete: if false;
+      // Only employees can delete a conversation — a visitor could otherwise
+      // wipe out their own chat history and any record the business has of it.
+      allow delete: if isEmployee();
 
       match /messages/{messageId} {
         allow read: if isEmployee() || isOwningVisitor(conversationId);
@@ -36,7 +38,8 @@ service cloud.firestore {
         allow create: if (isEmployee() && request.resource.data.sender == 'admin')
           || (isOwningVisitor(conversationId) && request.resource.data.sender == 'visitor');
 
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if isEmployee();
       }
     }
   }
