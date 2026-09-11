@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Send, X } from "lucide-react";
 import { signInAnonymously } from "firebase/auth";
 import { auth, isFirebaseConfigured } from "../lib/firebase";
+import { useChat } from "../context/ChatContext";
 import {
   getOrCreateConversation,
   markConversationRead,
@@ -14,7 +15,7 @@ import {
 const NAME_KEY = "gsn_chat_visitor_name";
 
 export default function ChatWidget() {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, pending, clearPending } = useChat();
   const [ready, setReady] = useState(false);
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) ?? "");
   const [nameSubmitted, setNameSubmitted] = useState(() => Boolean(localStorage.getItem(NAME_KEY)));
@@ -24,9 +25,25 @@ export default function ChatWidget() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [attract, setAttract] = useState(false);
+  const autoSentRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   if (!isFirebaseConfigured) return null;
+
+  // A form elsewhere on the site (e.g. the estimate request) can hand the
+  // visitor straight into a pre-filled chat via ChatContext.openChatWith().
+  useEffect(() => {
+    if (!pending) return;
+    autoSentRef.current = false;
+    const trimmed = pending.name.trim();
+    if (trimmed) {
+      localStorage.setItem(NAME_KEY, trimmed);
+      setName(trimmed);
+      setNameSubmitted(true);
+    }
+    if (!pending.message) clearPending();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending]);
 
   // Give the bubble a brief bounce shortly after the page loads to catch a
   // first-time visitor's eye, then settle down.
@@ -70,6 +87,16 @@ export default function ChatWidget() {
     const unsub = subscribeToMessages(conversationId, setMessages);
     return unsub;
   }, [conversationId]);
+
+  // Once the conversation is ready, send the pending message (if any) exactly
+  // once, then clear it so it doesn't resend on a later reopen.
+  useEffect(() => {
+    if (!ready || !conversationId || !pending?.message || autoSentRef.current) return;
+    autoSentRef.current = true;
+    sendMessage(conversationId, pending.message, "visitor")
+      .catch((err) => console.error("Auto-send failed", err))
+      .finally(() => clearPending());
+  }, [ready, conversationId, pending, clearPending]);
 
   // Track unread replies so the bubble can badge itself even while closed.
   useEffect(() => {
@@ -117,7 +144,7 @@ export default function ChatWidget() {
     <>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!open)}
         aria-label={open ? "Close chat" : unreadByVisitor > 0 ? `Open chat — ${unreadByVisitor} new message${unreadByVisitor > 1 ? "s" : ""}` : "Open chat"}
         className={`fixed bottom-24 left-4 lg:bottom-8 lg:left-8 z-50 flex h-14 items-center justify-center gap-2.5 rounded-full bg-blue-600 text-white shadow-elevated transition-all duration-300 hover:-translate-y-1 hover:bg-blue-500 ${
           open ? "w-14" : "px-4 sm:pr-5"

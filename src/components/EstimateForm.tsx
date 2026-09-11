@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { BUSINESS, FORM_SERVICE_OPTIONS, type ServiceId } from "../lib/constants";
 import { useServiceSelection } from "../context/ServiceSelectionContext";
+import { useChat } from "../context/ChatContext";
 import Reveal from "./Reveal";
 
 type ContactMethod = "Phone Call" | "Text Message" | "Email";
@@ -42,6 +43,7 @@ const FORMSUBMIT_ENDPOINT = `https://formsubmit.co/ajax/${BUSINESS.email}`;
 
 export default function EstimateForm() {
   const { selected } = useServiceSelection();
+  const { openChatWith } = useChat();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [form, setForm] = useState<FormState>({ ...INITIAL, service: selected ?? "" });
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -132,6 +134,12 @@ export default function EstimateForm() {
 
       if (!res.ok) throw new Error("Request failed");
       setStatus("success");
+      // Hand the visitor straight into a pre-filled live chat so they get an
+      // immediate response instead of just waiting on an email/call back.
+      openChatWith(
+        form.fullName,
+        `Hi, I just requested a free estimate for ${serviceLabel || "a project"}. ${form.message}`.trim()
+      );
     } catch {
       setStatus("error");
     }
@@ -145,7 +153,8 @@ export default function EstimateForm() {
         </span>
         <h3 className="mt-6 font-display font-bold text-navy-900 text-2xl sm:text-3xl">Thank You!</h3>
         <p className="mt-3 text-gray-500 text-lg max-w-md mx-auto">
-          We received your project information. GSN Construction LLC will contact you shortly.
+          We received your project information. We've also opened a live chat below — say hello
+          and a team member will jump in.
         </p>
         <p className="mt-6 text-sm text-gray-500">
           Need immediate assistance? Call{" "}

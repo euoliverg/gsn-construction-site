@@ -129,14 +129,11 @@ export const FORM_SERVICE_OPTIONS: { id: ServiceId; label: string }[] = [
   { id: "other", label: "Other" },
 ];
 
-// Order matches the sections' actual top-to-bottom position on the page —
-// keep it that way so clicking down the nav always scrolls forward, never
-// jumps back up.
 export const NAV_LINKS = [
-  { href: "#home", label: "Home" },
-  { href: "#services", label: "Services" },
-  { href: "#projects", label: "Projects" },
-  { href: "#about", label: "About" },
-  { href: "#service-area", label: "Service Area" },
-  { href: "#contact", label: "Contact" },
+  { href: "/", label: "Home" },
+  { href: "/services", label: "Services" },
+  { href: "/projects", label: "Projects" },
+  { href: "/about", label: "About" },
+  { href: "/service-area", label: "Service Area" },
+  { href: "/contact", label: "Contact" },
 ];

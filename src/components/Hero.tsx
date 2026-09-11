@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import HeroScene from "./HeroScene";
 import { CallSplitButton } from "./CallButtons";
@@ -57,13 +58,13 @@ export default function Hero() {
           */}
           <div className="mt-9 animate-fade-in">
             <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="#contact"
+              <Link
+                to="/contact"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 hover:bg-blue-500 px-7 py-4 text-base font-semibold text-white shadow-[0_14px_36px_-10px_rgba(8,102,217,0.75)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-8px_rgba(22,136,255,0.85)]"
               >
                 Get a Free Estimate
                 <ArrowRight size={18} />
-              </a>
+              </Link>
               <CallSplitButton />
             </div>
 
