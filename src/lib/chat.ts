@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -43,9 +44,11 @@ export async function getOrCreateConversation(visitorName: string, uid: string):
   // conversation (see isOwningVisitor in firestore.rules).
   const conversationId = uid;
   const ref = doc(db, "conversations", conversationId);
-  await setDoc(
-    ref,
-    {
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    // Only set these on first creation — reopening the widget later must not
+    // wipe out the real lastMessageText/lastMessageAt/unread counters.
+    await setDoc(ref, {
       visitorName,
       status: "open",
       createdAt: serverTimestamp(),
@@ -53,9 +56,10 @@ export async function getOrCreateConversation(visitorName: string, uid: string):
       lastMessageText: "",
       unreadByAdmin: 0,
       unreadByVisitor: 0,
-    },
-    { merge: true }
-  );
+    });
+  } else {
+    await setDoc(ref, { visitorName, status: "open" }, { merge: true });
+  }
   return conversationId;
 }
 
