@@ -125,6 +125,30 @@ export function subscribeToMessages(
   });
 }
 
+export function subscribeToConversation(
+  conversationId: string,
+  cb: (conversation: Conversation | null) => void
+): Unsubscribe {
+  if (!db) return () => {};
+  return onSnapshot(doc(db, "conversations", conversationId), (snap) => {
+    if (!snap.exists()) {
+      cb(null);
+      return;
+    }
+    const data = snap.data();
+    cb({
+      id: snap.id,
+      visitorName: data.visitorName ?? "Visitor",
+      status: data.status ?? "open",
+      lastMessageText: data.lastMessageText ?? "",
+      lastMessageAt: data.lastMessageAt?.toMillis?.() ?? null,
+      unreadByAdmin: data.unreadByAdmin ?? 0,
+      unreadByVisitor: data.unreadByVisitor ?? 0,
+      createdAt: data.createdAt?.toMillis?.() ?? null,
+    });
+  });
+}
+
 export function subscribeToConversations(cb: (conversations: Conversation[]) => void): Unsubscribe {
   if (!db) return () => {};
   const q = query(collection(db, "conversations"), orderBy("lastMessageAt", "desc"));
