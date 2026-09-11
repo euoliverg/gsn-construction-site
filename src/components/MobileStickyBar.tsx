@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Phone, FileText } from "lucide-react";
 import { PHONE_NUMBERS } from "../lib/constants";
 
@@ -19,13 +20,13 @@ export default function MobileStickyBar() {
             <span className="text-[11px] font-bold leading-none whitespace-nowrap">{p.label}</span>
           </a>
         ))}
-        <a
-          href="#contact"
+        <Link
+          to="/contact"
           className="flex items-center justify-center gap-2 bg-blue-600 py-4 text-sm font-bold text-white active:bg-blue-700"
         >
           <FileText size={17} />
           GET ESTIMATE
-        </a>
+        </Link>
       </div>
     </div>
   );

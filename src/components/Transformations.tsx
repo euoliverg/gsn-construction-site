@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { ArrowRight, Check } from "lucide-react";
 import Reveal from "./Reveal";
 import BeforeAfterSlider from "./BeforeAfterSlider";
@@ -74,13 +75,13 @@ export default function Transformations() {
               </figcaption>
             </figure>
 
-            <a
-              href="#contact"
+            <Link
+              to="/contact"
               className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-blue-50 px-7 py-4 text-base font-semibold text-navy-900 shadow-elevated transition-all hover:-translate-y-0.5"
             >
               Get My Free Estimate
               <ArrowRight size={18} />
-            </a>
+            </Link>
           </Reveal>
         </div>
       </div>

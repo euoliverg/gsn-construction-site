@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Phone, Mail } from "lucide-react";
 import Logo from "./Logo";
 import { BUSINESS, NAV_LINKS, PHONE_NUMBERS } from "../lib/constants";
@@ -31,15 +32,13 @@ export default function Footer() {
           <div>
             <h3 className="font-display font-semibold text-white text-sm tracking-wide">Navigation</h3>
             <ul className="mt-5 space-y-3">
-              {NAV_LINKS.filter((l) => ["#home", "#services", "#about", "#projects", "#contact"].includes(l.href)).map(
-                (link) => (
-                  <li key={link.href}>
-                    <a href={link.href} className="text-sm hover:text-white transition-colors">
-                      {link.label}
-                    </a>
-                  </li>
-                ),
-              )}
+              {NAV_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link to={link.href} className="text-sm hover:text-white transition-colors">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -71,12 +70,12 @@ export default function Footer() {
             <p className="mt-5 text-sm leading-relaxed">
               Ready to start your project? Reach out today and we&apos;ll get back to you shortly.
             </p>
-            <a
-              href="#contact"
+            <Link
+              to="/contact"
               className="mt-5 inline-flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-500 px-6 py-3 text-sm font-semibold text-white transition-all"
             >
               Get a Free Estimate
-            </a>
+            </Link>
           </div>
         </div>
 

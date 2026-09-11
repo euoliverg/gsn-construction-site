@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import Reveal from "./Reveal";
 import { CallSplitButton } from "./CallButtons";
@@ -20,13 +21,13 @@ export default function MidCTA() {
 
         {/* No transform wrapper here: see note in Hero.tsx about iOS Safari blocking tel: taps mid-animation. */}
         <div className="mt-9 flex flex-col sm:flex-row gap-4 justify-center">
-          <a
-            href="#contact"
+          <Link
+            to="/contact"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-blue-50 px-7 py-4 text-base font-semibold text-navy-900 shadow-elevated transition-all hover:-translate-y-0.5"
           >
             Get My Free Estimate
             <ArrowRight size={18} />
-          </a>
+          </Link>
           <CallSplitButton />
         </div>
       </div>

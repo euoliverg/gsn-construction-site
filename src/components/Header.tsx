@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Phone } from "lucide-react";
 import Logo from "./Logo";
 import { NAV_LINKS, PHONE_NUMBERS } from "../lib/constants";
@@ -6,7 +7,7 @@ import { NAV_LINKS, PHONE_NUMBERS } from "../lib/constants";
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeHref, setActiveHref] = useState("#home");
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -15,27 +16,9 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Highlight whichever nav section is currently in view, so the menu always
-  // reflects where you actually are on the page.
   useEffect(() => {
-    const sections = NAV_LINKS.map((link) => document.querySelector(link.href)).filter(
-      (el): el is Element => el !== null
-    );
-    if (sections.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (visible.length === 0) return;
-        // Prefer the one closest to the top of the viewport.
-        const topMost = visible.reduce((a, b) => (a.boundingClientRect.top <= b.boundingClientRect.top ? a : b));
-        setActiveHref(`#${topMost.target.id}`);
-      },
-      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
-    );
-    sections.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
+    setMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -55,7 +38,7 @@ export default function Header() {
       }`}
     >
       <div className="container-px mx-auto max-w-7xl flex items-center justify-between h-[72px]">
-        <a href="#home" className="flex items-center gap-3 shrink-0" aria-label="GSN Construction LLC home">
+        <Link to="/" className="flex items-center gap-3 shrink-0" aria-label="GSN Construction LLC home">
           <span className="flex items-center justify-center h-11 w-11 sm:h-12 sm:w-12 rounded-xl bg-white shadow-md p-1.5">
             <Logo className="w-full h-full object-contain" />
           </span>
@@ -67,15 +50,15 @@ export default function Header() {
               LLC
             </span>
           </span>
-        </a>
+        </Link>
 
         <nav className="hidden lg:flex items-center gap-9" aria-label="Primary">
           {NAV_LINKS.map((link) => {
-            const active = activeHref === link.href;
+            const active = pathname === link.href;
             return (
-              <a
+              <Link
                 key={link.href}
-                href={link.href}
+                to={link.href}
                 aria-current={active ? "true" : undefined}
                 className={`text-sm font-medium transition-colors relative group ${
                   active ? "text-white" : "text-white/85 hover:text-white"
@@ -87,7 +70,7 @@ export default function Header() {
                     active ? "w-full" : "w-0 group-hover:w-full"
                   }`}
                 />
-              </a>
+              </Link>
             );
           })}
         </nav>
@@ -106,12 +89,12 @@ export default function Header() {
         </div>
 
         <div className="hidden lg:flex items-center gap-4">
-          <a
-            href="#contact"
+          <Link
+            to="/contact"
             className="inline-flex items-center rounded-full bg-blue-600 hover:bg-blue-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(8,102,217,0.7)] transition-all hover:shadow-[0_10px_28px_-6px_rgba(22,136,255,0.8)] hover:-translate-y-0.5"
           >
             Get a Free Estimate
-          </a>
+          </Link>
         </div>
 
         <button
@@ -133,17 +116,17 @@ export default function Header() {
       >
         <nav className="flex flex-col gap-1 p-6" aria-label="Mobile">
           {NAV_LINKS.map((link) => (
-            <a
+            <Link
               key={link.href}
-              href={link.href}
+              to={link.href}
               onClick={() => setMenuOpen(false)}
-              aria-current={activeHref === link.href ? "true" : undefined}
+              aria-current={pathname === link.href ? "true" : undefined}
               className={`text-lg font-medium py-4 border-b border-white/10 ${
-                activeHref === link.href ? "text-blue-300" : "text-white"
+                pathname === link.href ? "text-blue-300" : "text-white"
               }`}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
           <div className="mt-6 flex flex-col gap-3">
             {PHONE_NUMBERS.map((p) => (
@@ -152,13 +135,13 @@ export default function Header() {
               </a>
             ))}
           </div>
-          <a
-            href="#contact"
+          <Link
+            to="/contact"
             onClick={() => setMenuOpen(false)}
             className="mt-4 inline-flex items-center justify-center rounded-full bg-blue-600 px-6 py-3.5 text-base font-semibold text-white"
           >
             Get a Free Estimate
-          </a>
+          </Link>
         </nav>
       </div>
     </header>

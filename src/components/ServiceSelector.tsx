@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   Home,
   ShowerHead,
@@ -78,13 +79,13 @@ export default function ServiceSelector() {
         </Reveal>
 
         <Reveal delay={180}>
-          <a
-            href="#contact"
+          <Link
+            to="/contact"
             className="mt-12 inline-flex items-center gap-2 text-sm font-semibold text-blue-300 hover:text-blue-200"
           >
             Or go straight to the estimate form
             <ArrowRight size={16} />
-          </a>
+          </Link>
         </Reveal>
       </div>
     </section>
