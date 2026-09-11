@@ -129,9 +129,11 @@ export default function AdminDashboard({ user }: { user: User }) {
                   setConfirmDeleteId(c.id);
                 }}
                 aria-label={`Excluir conversa com ${c.visitorName}`}
-                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-md text-gray-300 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
+                // Always visible: the panel is used on phones, where there's
+                // no hover to reveal a hidden control.
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600 active:bg-red-50 active:text-red-600 lg:text-gray-200 lg:group-hover:text-gray-400"
               >
-                <Trash2 size={14} />
+                <Trash2 size={15} />
               </button>
             </div>
           ))}
