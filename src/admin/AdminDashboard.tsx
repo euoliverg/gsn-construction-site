@@ -77,7 +77,15 @@ export default function AdminDashboard({ user }: { user: User }) {
   const listVisible = !activeId;
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-gray-50 lg:flex-row">
+    // Installed as an app the panel owns the whole screen, so it has to
+    // keep clear of the notch and the home indicator itself.
+    <div
+      className="flex h-[100dvh] flex-col bg-gray-50 lg:flex-row"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
       {/* Conversation list */}
       <aside
         className={`${listVisible ? "flex" : "hidden"} lg:flex w-full lg:w-80 shrink-0 flex-col border-r border-gray-100 bg-white`}
