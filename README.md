@@ -1,123 +1,126 @@
-# GSN Contru
+# GSN Construction · OLIVER.DEV
 
-A modern marketing website for GSN Contru, built with React, TypeScript, Vite and Tailwind CSS.
+![CI](https://github.com/euoliverg/gsn-construction-site/actions/workflows/ci.yml/badge.svg)
+[![Live site](https://img.shields.io/badge/live%20site-visit-167c80?style=flat)](https://gsnconstruction-test.vercel.app)
+[![License](https://img.shields.io/badge/license-MIT-167c80?style=flat)](LICENSE)
 
-## Overview
+> A polished, mobile-first website and real-time customer chat platform for a
+> construction and remodeling business.
 
-This project is a high-conversion landing page for a construction and remodeling business, focused on:
+**Built and presented by [OLIVER.DEV](https://github.com/euoliverg)**
 
-- Service presentation and trust-building
-- Portfolio showcase
-- Lead generation through quote requests
-- Mobile-first experience
-- Fast deployment on Vercel
+**[Visit the live site](https://gsnconstruction-test.vercel.app)** · **[View the admin panel docs](admin-panel/README.md)**
 
-## Tech Stack
+## What this project includes
 
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS
-- Lucide icons
+- Service pages designed to turn visits into quote requests
+- Project gallery, before-and-after transformations, and video showcase
+- Responsive experience for homeowners browsing on mobile or desktop
+- Real-time chat between visitors and the GSN Construction team
+- Portuguese/English message translation for customers and employees
+- Separate Firebase-powered admin panel for managing conversations
+- Automated CI checks and Vercel-ready production deployment
 
-## Project Structure
+## Product structure
 
 ```text
-src/
-├── components/
-├── context/
-├── lib/
-├── App.tsx
-├── index.css
-├── main.tsx
-public/
-├── assets/
-├── robots.txt
-├── sitemap.xml
-.github/
-├── workflows/
-├── ISSUE_TEMPLATE/
-README.md
-CONTRIBUTING.md
-LICENSE
-package.json
-vite.config.ts
+GSN CONTRU/
+├── src/                 # Public website and shared visitor experience
+│   ├── components/      # Header, hero, services, gallery, chat and CTAs
+│   ├── context/         # Chat and service-selection state
+│   ├── lib/             # Firebase, translations, projects and videos
+│   └── pages/           # Home, services, projects, contact and service area
+├── public/              # SEO files, project images and videos
+├── admin-panel/         # Standalone employee chat dashboard
+├── firestore.rules      # Shared Firebase security rules
+├── .github/             # CI, issue templates and pull request workflow
+└── vercel.json          # Deployment configuration
 ```
 
-## Local Development
+## Tech stack
+
+| Area | Tools |
+| --- | --- |
+| Frontend | React 19, TypeScript, React Router |
+| Build | Vite, Tailwind CSS |
+| UI | Lucide React, responsive CSS |
+| Backend | Firebase Authentication and Firestore |
+| Translation | Public translation API with graceful fallback |
+| Delivery | Vercel and GitHub Actions |
+
+## Run locally
+
+### Public website
 
 ```bash
 npm install
 npm run dev
 ```
 
-The app will be available in your browser at the URL shown by Vite.
+### Admin panel
 
-## Production Build
+The admin panel is a separate Vite app and must use the same Firebase project as
+the public website.
 
 ```bash
-npm run build
+cd admin-panel
+npm install
+npm run dev
 ```
 
-## Quality Check
+Copy [`.env.example`](.env.example) to `.env.local` in each app that needs
+Firebase and fill in the project values. Environment files stay local and are
+ignored by Git.
+
+## Verification
+
+Run the same checks used by CI before opening a pull request:
 
 ```bash
 npm run lint
+npm run build
 ```
 
-## Live Chat & Admin Panel
+To validate the admin panel too:
 
-The site includes a live chat widget for visitors and a mobile-friendly admin
-panel at `/admin` for employees to reply, backed by Firebase (Firestore +
-Auth).
+```bash
+cd admin-panel
+npm run lint
+npm run build
+```
 
-### One-time Firebase setup
+## Firebase and chat setup
 
-1. Create a project at [console.firebase.google.com](https://console.firebase.google.com).
-2. **Build > Firestore Database** → Create database (production mode is fine).
-3. **Build > Firestore Database > Rules** → paste the contents of
-   [`firestore.rules`](firestore.rules) and publish.
-4. **Build > Authentication > Sign-in method** → enable **Anonymous** (used
-   for visitors) and **Email/Password** (used for employees).
-5. **Build > Authentication > Users** → add one user per employee (email +
-   password) who should be able to answer chats.
-6. **Project settings > General > Your apps** → add a Web app, copy the
-   config values.
-7. Copy [`.env.example`](.env.example) to `.env.local` and fill in the values
-   from step 6. Add the same variables in Vercel (Project Settings →
-   Environment Variables) for production.
+1. Create a Firebase project with Firestore and Authentication enabled.
+2. Enable Anonymous sign-in for visitors and Email/Password sign-in for staff.
+3. Publish the rules from [`firestore.rules`](firestore.rules).
+4. Create staff accounts in Firebase Authentication.
+5. Add the Firebase environment variables to local development and Vercel.
 
-### Using it
-
-- Visitors: the chat bubble (bottom-left) is on every public page. They enter
-  their name once and can message the team in English; no account needed.
-- Employees: go to `/admin`, sign in with the email/password created in step
-  5, pick a conversation on the left, and reply in Portuguese — visitors see
-  replies in real time.
-
-**Auto-translation:** the chat auto-translates every message (free, no API
-key) so visitors always write/read in English and employees always
-write/read in Portuguese — each side never has to switch languages. The
-admin panel also shows the client's original English text in small gray
-text under each translated bubble, in case a name, address or detail needs
-double-checking. This relies on a free public translation API with a modest
-daily quota; if it's ever exceeded, messages fall back to showing the
-original, untranslated text instead of breaking.
-
-Until the environment variables are set, the chat widget hides itself and
-`/admin` shows a "not configured" message instead of breaking the site.
+Visitors can start a conversation without an account. Staff members sign in at
+`/admin`, select a conversation, and reply in Portuguese. The chat translates
+messages automatically and falls back to the original text if the translation
+service is unavailable.
 
 ## Deployment
 
-This repository is configured for deployment on Vercel.
+The public site is configured for Vercel. The admin panel can be deployed as a
+separate Vercel project or under its own subdomain. Configure the Firebase
+environment variables in the hosting provider before deploying.
 
-Production URL:
-https://gsnconstruction-test.vercel.app
+**Production:** [gsnconstruction-test.vercel.app](https://gsnconstruction-test.vercel.app)
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow and contribution standards.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and pull
+request standards.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is released under the [MIT License](LICENSE).
+
+---
+
+### OLIVER.DEV
+
+Digital products, modern websites and practical technology solutions.

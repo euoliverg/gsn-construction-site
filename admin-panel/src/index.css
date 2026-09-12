@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --color-navy-950: #04101f;
+  --color-navy-900: #07182b;
+  --color-navy-800: #0b2038;
+  --color-navy-700: #10304f;
+  --color-navy-600: #163f66;
+
+  --color-blue-700: #0752ad;
+  --color-blue-600: #0866d9;
+  --color-blue-500: #1688ff;
+  --color-blue-400: #4fa5ff;
+  --color-blue-300: #8ec5ff;
+  --color-blue-100: #e2f0ff;
+
+  --color-white: #ffffff;
+  --color-gray-50: #f4f6f8;
+  --color-gray-100: #e8ecf1;
+  --color-gray-400: #98a2b3;
+  --color-gray-500: #667085;
+  --color-gray-700: #3d4653;
+
+  --shadow-elevated: 0 20px 60px -15px rgba(4, 16, 31, 0.35);
+  --shadow-card: 0 8px 30px -12px rgba(7, 24, 43, 0.18);
+  --shadow-glow: 0 0 40px rgba(22, 136, 255, 0.25);
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade-in: fade-in 0.8s ease both;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-drift: drift 22s linear infinite;
+  --animate-pulse-glow: pulse-glow 3.5s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(var(--tilt, 0deg));
+    }
+    50% {
+      transform: translateY(-14px) rotate(var(--tilt, 0deg));
+    }
+  }
+  @keyframes drift {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 120px 120px;
+    }
+  }
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-white);
+    color: var(--color-navy-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: var(--color-blue-500);
+    color: white;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-blue-500);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .container-px {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .container-px {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .blueprint-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+
+  .blueprint-grid-dark {
+    background-image:
+      linear-gradient(rgba(7, 24, 43, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(7, 24, 43, 0.06) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Native-app behaviour on phones
+   --------------------------------------------------------------------- */
+
+/* iOS Safari zooms the whole page in whenever you focus a field whose text
+   is smaller than 16px, and never zooms back out — that's the "random
+   zoom" when tapping the chat box, the login or the estimate form. Forcing
+   every field to 16px on touch devices removes the trigger entirely,
+   without disabling pinch-zoom (which people still need). */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+html {
+  /* Stop iOS from inflating text when the phone is rotated. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  /* No rubber-band bounce or pull-to-refresh behind the page: the scroll
+     stops at the edges the way it does in an app. */
+  overscroll-behavior-y: none;
+  /* Kill the grey flash Android draws over anything you tap. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Chrome that shouldn't feel like a web page: no text selection or callout
+   menu on long-press, the way native controls behave. Content (headings,
+   copy, chat messages) stays selectable. */
+button,
+[role="button"],
+nav a {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

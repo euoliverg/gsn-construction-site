@@ -1,0 +1,46 @@
+rules_version = '2';
+
+// Deploy these in the Firebase console: Firestore Database > Rules.
+//
+// Model:
+//  - Visitors sign in anonymously; their Firebase Auth uid IS the conversation id
+//    (see getOrCreateConversation in src/lib/chat.ts), so a visitor can only ever
+//    touch their own conversation.
+//  - Employees sign in with email/password (created manually in Authentication),
+//    which Firebase marks as a non-anonymous provider — that's what grants them
+//    access to every conversation.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isEmployee() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    function isOwningVisitor(conversationId) {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == conversationId;
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isEmployee() || isOwningVisitor(conversationId);
+
+      allow create, update: if isEmployee() || isOwningVisitor(conversationId);
+
+      // Only employees can delete a conversation — a visitor could otherwise
+      // wipe out their own chat history and any record the business has of it.
+      allow delete: if isEmployee();
+
+      match /messages/{messageId} {
+        allow read: if isEmployee() || isOwningVisitor(conversationId);
+
+        allow create: if (isEmployee() && request.resource.data.sender == 'admin')
+          || (isOwningVisitor(conversationId) && request.resource.data.sender == 'visitor');
+
+        allow update: if false;
+        allow delete: if isEmployee();
+      }
+    }
+  }
+}
