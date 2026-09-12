@@ -160,3 +160,44 @@
     background-size: 42px 42px;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Native-app behaviour on phones
+   --------------------------------------------------------------------- */
+
+/* iOS Safari zooms the whole page in whenever you focus a field whose text
+   is smaller than 16px, and never zooms back out — that's the "random
+   zoom" when tapping the chat box, the login or the estimate form. Forcing
+   every field to 16px on touch devices removes the trigger entirely,
+   without disabling pinch-zoom (which people still need). */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+html {
+  /* Stop iOS from inflating text when the phone is rotated. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  /* No rubber-band bounce or pull-to-refresh behind the page: the scroll
+     stops at the edges the way it does in an app. */
+  overscroll-behavior-y: none;
+  /* Kill the grey flash Android draws over anything you tap. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Chrome that shouldn't feel like a web page: no text selection or callout
+   menu on long-press, the way native controls behave. Content (headings,
+   copy, chat messages) stays selectable. */
+button,
+[role="button"],
+nav a {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

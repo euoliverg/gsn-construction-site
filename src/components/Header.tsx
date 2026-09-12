@@ -35,6 +35,7 @@ export default function Header() {
   return (
     <>
     <header
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
         solid
           ? "bg-navy-900/95 backdrop-blur-md shadow-[0_10px_30px_-15px_rgba(4,16,31,0.5)]"
@@ -136,7 +137,8 @@ export default function Header() {
         className={`lg:hidden fixed inset-x-0 bottom-0 z-40 bg-navy-900 transition-all duration-300 ${
           menuOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-3 pointer-events-none"
         }`}
-        style={{ top: "72px" }}
+        // Sits right under the header, which grows by the notch inset.
+        style={{ top: "calc(72px + env(safe-area-inset-top))" }}
       >
         <nav className="flex flex-col gap-1 p-6" aria-label="Mobile">
           {NAV_LINKS.map((link) => (
