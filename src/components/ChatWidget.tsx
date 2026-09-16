@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X } from "lucide-react";
+import { Check, CheckCheck, MessageCircle, Send, X } from "lucide-react";
 import { signInAnonymously } from "firebase/auth";
 import { auth, isFirebaseConfigured } from "../lib/firebase";
 import { useChat } from "../context/ChatContext";
 import {
   getOrCreateConversation,
-  markConversationRead,
+  markMessagesRead,
   sendMessage,
+  setVisitorContact,
   subscribeToConversation,
   subscribeToMessages,
   type ChatMessage,
@@ -18,6 +19,7 @@ export default function ChatWidget() {
   const { open, setOpen, pending, clearPending } = useChat();
   const [ready, setReady] = useState(false);
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) ?? "");
+  const [contact, setContact] = useState("");
   const [nameSubmitted, setNameSubmitted] = useState(() => Boolean(localStorage.getItem(NAME_KEY)));
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -65,7 +67,7 @@ export default function ChatWidget() {
       try {
         if (!auth) throw new Error("Chat is not configured.");
         const user = auth.currentUser ?? (await signInAnonymously(auth)).user;
-        const id = await getOrCreateConversation(name || "Visitor", user.uid);
+        const id = await getOrCreateConversation(name || "Visitor", user.uid, window.location.pathname);
         if (!cancelled) {
           setConversationId(id);
           setReady(true);
@@ -107,7 +109,7 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (open && conversationId && unreadByVisitor > 0) {
-      markConversationRead(conversationId, "visitor");
+      markMessagesRead(conversationId, "visitor");
     }
   }, [open, conversationId, unreadByVisitor]);
 
@@ -122,6 +124,19 @@ export default function ChatWidget() {
     localStorage.setItem(NAME_KEY, trimmed);
     setNameSubmitted(true);
   };
+
+  // Contact info is optional. It's saved on blur rather than on the name
+  // form's submit, since the conversation (and its id) may not exist yet at
+  // that point — sendContactIfPresent runs again once it does.
+  const sendContactIfPresent = () => {
+    const trimmed = contact.trim();
+    if (!conversationId || !trimmed) return;
+    setVisitorContact(conversationId, trimmed.includes("@") ? { email: trimmed } : { phone: trimmed }).catch(
+      () => {}
+    );
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(sendContactIfPresent, [conversationId]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,6 +210,13 @@ export default function ChatWidget() {
                 placeholder="Your name"
                 className="rounded-lg border border-gray-100 px-3 py-2.5 text-sm text-navy-900 outline-none focus:border-blue-400"
               />
+              <input
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+                onBlur={sendContactIfPresent}
+                placeholder="Email or phone (optional)"
+                className="rounded-lg border border-gray-100 px-3 py-2.5 text-sm text-navy-900 outline-none focus:border-blue-400"
+              />
               <button
                 type="submit"
                 disabled={!name.trim()}
@@ -232,6 +254,15 @@ export default function ChatWidget() {
                       {m.sender === "visitor" ? m.text : m.translatedText}
                       {m.sender === "admin" && (
                         <p className="mt-1 text-[10px] italic text-gray-400">Translated automatically</p>
+                      )}
+                      {m.sender === "visitor" && (
+                        <span className="mt-1 flex justify-end" aria-label={m.status === "read" ? "Read" : "Delivered"}>
+                          {m.status === "read" ? (
+                            <CheckCheck size={13} className="text-blue-200" />
+                          ) : (
+                            <Check size={13} className="text-blue-200/70" />
+                          )}
+                        </span>
                       )}
                     </div>
                   </div>

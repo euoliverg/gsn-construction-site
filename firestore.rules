@@ -38,7 +38,13 @@ service cloud.firestore {
         allow create: if (isEmployee() && request.resource.data.sender == 'admin')
           || (isOwningVisitor(conversationId) && request.resource.data.sender == 'visitor');
 
-        allow update: if false;
+        // Only the recipient can flip a message to "read", and only the
+        // read-receipt fields — never the text, sender or translation.
+        allow update: if request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'readAt'])
+          && ((isEmployee() && resource.data.sender == 'visitor')
+            || (isOwningVisitor(conversationId) && resource.data.sender == 'admin'));
+
         allow delete: if isEmployee();
       }
     }

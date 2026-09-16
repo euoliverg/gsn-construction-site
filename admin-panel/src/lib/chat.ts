@@ -11,26 +11,39 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
   increment,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { translateText } from "./translate";
+import { translateText, translateAuto } from "./translate";
+
+export type MessageStatus = "sent" | "delivered" | "read";
 
 export interface ChatMessage {
   id: string;
-  /** Original text, in the sender's own language (English for visitors, Portuguese for admins). */
+  /** Original text, in the sender's own language (visitor's detected language, or Portuguese for admins). */
   text: string;
   /** Auto-translated text, in the other side's language. */
   translatedText: string;
+  /** ISO 639-1 code the original text was written in (e.g. "en", "es", "pt"). */
+  originalLanguage: string;
   sender: "visitor" | "admin";
   senderName?: string;
+  status: MessageStatus;
   createdAt: number | null;
+  readAt: number | null;
 }
 
 export interface Conversation {
   id: string;
   visitorName: string;
+  visitorEmail: string | null;
+  visitorPhone: string | null;
+  /** ISO 639-1 code of the visitor's language, detected from their messages. Updates if they switch languages. */
+  visitorLanguage: string;
+  /** Site path the visitor was on when the conversation started. */
+  startPage: string | null;
   status: "open" | "closed";
   lastMessageText: string;
   lastMessageAt: number | null;
@@ -39,7 +52,11 @@ export interface Conversation {
   createdAt: number | null;
 }
 
-export async function getOrCreateConversation(visitorName: string, uid: string): Promise<string> {
+export async function getOrCreateConversation(
+  visitorName: string,
+  uid: string,
+  startPage?: string
+): Promise<string> {
   if (!db) throw new Error("Chat is not configured.");
   // The conversation id IS the visitor's anonymous Firebase Auth uid — this is
   // what the Firestore security rules check to scope a visitor to their own
@@ -52,6 +69,10 @@ export async function getOrCreateConversation(visitorName: string, uid: string):
     // wipe out the real lastMessageText/lastMessageAt/unread counters.
     await setDoc(ref, {
       visitorName,
+      visitorEmail: null,
+      visitorPhone: null,
+      visitorLanguage: "en",
+      startPage: startPage ?? null,
       status: "open",
       createdAt: serverTimestamp(),
       lastMessageAt: serverTimestamp(),
@@ -65,6 +86,19 @@ export async function getOrCreateConversation(visitorName: string, uid: string):
   return conversationId;
 }
 
+/** Visitor-supplied contact details are optional and can arrive any time during the chat. */
+export async function setVisitorContact(
+  conversationId: string,
+  contact: { email?: string; phone?: string }
+) {
+  if (!db) return;
+  const update: Record<string, string> = {};
+  if (contact.email?.trim()) update.visitorEmail = contact.email.trim();
+  if (contact.phone?.trim()) update.visitorPhone = contact.phone.trim();
+  if (Object.keys(update).length === 0) return;
+  await setDoc(doc(db, "conversations", conversationId), update, { merge: true });
+}
+
 export async function sendMessage(
   conversationId: string,
   text: string,
@@ -75,18 +109,40 @@ export async function sendMessage(
   const trimmed = text.trim();
   if (!trimmed) return;
 
-  // Visitors write in English, admins write in Portuguese — always translate
-  // to the other language so each side reads their own.
-  const translatedText =
-    sender === "visitor"
-      ? await translateText(trimmed, "en", "pt")
-      : await translateText(trimmed, "pt", "en");
+  let translatedText: string;
+  let originalLanguage: string;
+
+  if (sender === "visitor") {
+    // Detect whatever language the visitor is writing in (it can change
+    // mid-conversation) and always translate to Portuguese for the team.
+    const convSnap = await getDoc(doc(db, "conversations", conversationId));
+    const lastKnownLanguage = convSnap.exists() ? convSnap.data().visitorLanguage ?? "en" : "en";
+    const result = await translateAuto(trimmed, "pt", lastKnownLanguage);
+    translatedText = result.text;
+    originalLanguage = result.detectedLang;
+    if (originalLanguage && originalLanguage !== lastKnownLanguage) {
+      await setDoc(doc(db, "conversations", conversationId), { visitorLanguage: originalLanguage }, { merge: true });
+    }
+  } else {
+    // Admins always write in Portuguese; translate into whichever language
+    // this visitor has been detected using, defaulting to English.
+    const convSnap = await getDoc(doc(db, "conversations", conversationId));
+    const targetLanguage = convSnap.exists() ? convSnap.data().visitorLanguage ?? "en" : "en";
+    translatedText = await translateText(trimmed, "pt", targetLanguage);
+    originalLanguage = "pt";
+  }
 
   await addDoc(collection(db, "conversations", conversationId, "messages"), {
     text: trimmed,
     translatedText,
+    originalLanguage,
     sender,
     senderName: senderName ?? null,
+    // Firestore's realtime sync delivers this near-instantly to whoever has
+    // the conversation open, so "delivered" is the honest starting status;
+    // it becomes "read" once the recipient actually views it.
+    status: "delivered",
+    readAt: null,
     createdAt: serverTimestamp(),
   });
 
@@ -127,9 +183,12 @@ export function subscribeToMessages(
           id: d.id,
           text: data.text,
           translatedText: data.translatedText ?? data.text,
+          originalLanguage: data.originalLanguage ?? "en",
           sender: data.sender,
           senderName: data.senderName ?? undefined,
+          status: data.status ?? "sent",
           createdAt: data.createdAt?.toMillis?.() ?? null,
+          readAt: data.readAt?.toMillis?.() ?? null,
         };
       })
     );
@@ -146,17 +205,7 @@ export function subscribeToConversation(
       cb(null);
       return;
     }
-    const data = snap.data();
-    cb({
-      id: snap.id,
-      visitorName: data.visitorName ?? "Visitor",
-      status: data.status ?? "open",
-      lastMessageText: data.lastMessageText ?? "",
-      lastMessageAt: data.lastMessageAt?.toMillis?.() ?? null,
-      unreadByAdmin: data.unreadByAdmin ?? 0,
-      unreadByVisitor: data.unreadByVisitor ?? 0,
-      createdAt: data.createdAt?.toMillis?.() ?? null,
-    });
+    cb(toConversation(snap.id, snap.data()));
   });
 }
 
@@ -164,22 +213,26 @@ export function subscribeToConversations(cb: (conversations: Conversation[]) => 
   if (!db) return () => {};
   const q = query(collection(db, "conversations"), orderBy("lastMessageAt", "desc"));
   return onSnapshot(q, (snap) => {
-    cb(
-      snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          visitorName: data.visitorName ?? "Visitor",
-          status: data.status ?? "open",
-          lastMessageText: data.lastMessageText ?? "",
-          lastMessageAt: data.lastMessageAt?.toMillis?.() ?? null,
-          unreadByAdmin: data.unreadByAdmin ?? 0,
-          unreadByVisitor: data.unreadByVisitor ?? 0,
-          createdAt: data.createdAt?.toMillis?.() ?? null,
-        };
-      })
-    );
+    cb(snap.docs.map((d) => toConversation(d.id, d.data())));
   });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toConversation(id: string, data: any): Conversation {
+  return {
+    id,
+    visitorName: data.visitorName ?? "Visitor",
+    visitorEmail: data.visitorEmail ?? null,
+    visitorPhone: data.visitorPhone ?? null,
+    visitorLanguage: data.visitorLanguage ?? "en",
+    startPage: data.startPage ?? null,
+    status: data.status ?? "open",
+    lastMessageText: data.lastMessageText ?? "",
+    lastMessageAt: data.lastMessageAt?.toMillis?.() ?? null,
+    unreadByAdmin: data.unreadByAdmin ?? 0,
+    unreadByVisitor: data.unreadByVisitor ?? 0,
+    createdAt: data.createdAt?.toMillis?.() ?? null,
+  };
 }
 
 // These two fire from UI effects without an await, so a conversation that
@@ -194,6 +247,33 @@ export async function markConversationRead(conversationId: string, who: "admin" 
   } catch {
     /* conversation no longer exists */
   }
+}
+
+/**
+ * Stamps every unread message from the other side as "read" — the read
+ * receipt the sender sees ticks over from delivered to read. `reader` is
+ * whoever is now viewing the conversation, so it marks the counterpart's
+ * messages.
+ */
+export async function markMessagesRead(conversationId: string, reader: "admin" | "visitor") {
+  if (!db) return;
+  const counterpart = reader === "admin" ? "visitor" : "admin";
+  try {
+    const messagesSnap = await getDocs(collection(db, "conversations", conversationId, "messages"));
+    const batch = writeBatch(db);
+    let touched = false;
+    for (const docSnap of messagesSnap.docs) {
+      const data = docSnap.data();
+      if (data.sender === counterpart && data.status !== "read") {
+        batch.update(docSnap.ref, { status: "read", readAt: serverTimestamp() });
+        touched = true;
+      }
+    }
+    if (touched) await batch.commit();
+  } catch {
+    /* conversation no longer exists */
+  }
+  await markConversationRead(conversationId, reader);
 }
 
 export async function setConversationStatus(conversationId: string, status: "open" | "closed") {
