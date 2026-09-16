@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { signOut, type User } from "firebase/auth";
-import { ArrowLeft, CheckCircle2, LogOut, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, CheckCircle2, LogOut, Send, Trash2 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import {
   deleteConversation,
-  markConversationRead,
+  markMessagesRead,
   sendMessage,
   setConversationStatus,
   subscribeToConversations,
@@ -13,6 +13,23 @@ import {
   type Conversation,
 } from "../lib/chat";
 import { BUSINESS } from "../lib/constants";
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "Inglês",
+  pt: "Português",
+  es: "Espanhol",
+  fr: "Francês",
+  it: "Italiano",
+  de: "Alemão",
+  zh: "Chinês",
+  ja: "Japonês",
+  ru: "Russo",
+  ar: "Árabe",
+};
+
+function languageLabel(code: string) {
+  return LANGUAGE_NAMES[code] ?? code.toUpperCase();
+}
 
 function timeAgo(ms: number | null) {
   if (!ms) return "";
@@ -43,7 +60,7 @@ export default function AdminDashboard({ user }: { user: User }) {
   }, [activeId]);
 
   useEffect(() => {
-    if (activeId) markConversationRead(activeId, "admin");
+    if (activeId) markMessagesRead(activeId, "admin");
   }, [activeId, messages.length]);
 
   useEffect(() => {
@@ -77,7 +94,15 @@ export default function AdminDashboard({ user }: { user: User }) {
   const listVisible = !activeId;
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-gray-50 lg:flex-row">
+    // Installed as an app the panel owns the whole screen, so it has to
+    // keep clear of the notch and the home indicator itself.
+    <div
+      className="flex h-[100dvh] flex-col bg-gray-50 lg:flex-row"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
       {/* Conversation list */}
       <aside
         className={`${listVisible ? "flex" : "hidden"} lg:flex w-full lg:w-80 shrink-0 flex-col border-r border-gray-100 bg-white`}
@@ -160,7 +185,29 @@ export default function AdminDashboard({ user }: { user: User }) {
                 </button>
                 <div>
                   <p className="text-sm font-semibold text-navy-900">{active.visitorName}</p>
-                  <p className="text-xs text-gray-400">{active.status === "open" ? "Aberta" : "Fechada"}</p>
+                  <p className="flex flex-wrap items-center gap-x-2 text-xs text-gray-400">
+                    <span>{active.status === "open" ? "Aberta" : "Fechada"}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{languageLabel(active.visitorLanguage)}</span>
+                    {active.visitorEmail && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{active.visitorEmail}</span>
+                      </>
+                    )}
+                    {active.visitorPhone && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{active.visitorPhone}</span>
+                      </>
+                    )}
+                    {active.startPage && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>Iniciou em {active.startPage}</span>
+                      </>
+                    )}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -195,7 +242,18 @@ export default function AdminDashboard({ user }: { user: User }) {
                   >
                     {m.sender === "admin" ? m.text : m.translatedText}
                     {m.sender === "visitor" && (
-                      <p className="mt-1 text-[10px] italic text-gray-400">Original (EN): {m.text}</p>
+                      <p className="mt-1 text-[10px] italic text-gray-400">
+                        Original ({languageLabel(m.originalLanguage)}): {m.text}
+                      </p>
+                    )}
+                    {m.sender === "admin" && (
+                      <span className="mt-1 flex justify-end" aria-label={m.status === "read" ? "Lida" : "Entregue"}>
+                        {m.status === "read" ? (
+                          <CheckCheck size={13} className="text-blue-200" />
+                        ) : (
+                          <Check size={13} className="text-blue-200/70" />
+                        )}
+                      </span>
                     )}
                   </div>
                 </div>
