@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { signOut, type User } from "firebase/auth";
-import { ArrowLeft, Check, CheckCheck, CheckCircle2, LogOut, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, CheckCircle2, LogOut, Send, Star, Trash2 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import {
   deleteConversation,
@@ -13,6 +13,7 @@ import {
   type Conversation,
 } from "../lib/chat";
 import { BUSINESS } from "../lib/constants";
+import AdminReviewsPanel from "./AdminReviewsPanel";
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "Inglês",
@@ -43,6 +44,7 @@ function timeAgo(ms: number | null) {
 }
 
 export default function AdminDashboard({ user }: { user: User }) {
+  const [adminSection, setAdminSection] = useState<"chat" | "reviews">("chat");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -93,6 +95,10 @@ export default function AdminDashboard({ user }: { user: User }) {
 
   const listVisible = !activeId;
 
+  if (adminSection === "reviews") {
+    return <AdminReviewsPanel user={user} onBack={() => setAdminSection("chat")} />;
+  }
+
   return (
     // Installed as an app the panel owns the whole screen, so it has to
     // keep clear of the notch and the home indicator itself.
@@ -121,6 +127,14 @@ export default function AdminDashboard({ user }: { user: User }) {
             <LogOut size={18} />
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setAdminSection("reviews")}
+          className="m-3 flex items-center justify-center gap-2 rounded-xl bg-navy-900 px-4 py-3 text-xs font-bold text-white transition-colors hover:bg-blue-700"
+        >
+          <Star size={15} /> Moderar avaliações
+        </button>
 
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 && (

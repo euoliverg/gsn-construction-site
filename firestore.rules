@@ -48,5 +48,101 @@ service cloud.firestore {
         allow delete: if isEmployee();
       }
     }
+
+    // Review contact details stay in this private moderation collection.
+    // Visitors may create one automatically-published submission under their
+    // anonymous Auth uid; only an employee can read or change it later.
+    match /reviewSubmissions/{reviewId} {
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && reviewId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'fullName', 'displayName', 'contact', 'location', 'service',
+          'rating', 'comment', 'consent', 'status', 'verified', 'ownerId',
+          'createdAt', 'publishedAt'
+        ])
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'published'
+        && request.resource.data.verified == false
+        && request.resource.data.consent == true
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 2
+        && request.resource.data.fullName.size() <= 100
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 60
+        && request.resource.data.contact is string
+        && request.resource.data.contact.size() >= 7
+        && request.resource.data.contact.size() <= 160
+        && request.resource.data.location is string
+        && request.resource.data.location.size() <= 80
+        && request.resource.data['service'] is string
+        && request.resource.data['service'].size() >= 2
+        && request.resource.data['service'].size() <= 80
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() >= 20
+        && request.resource.data.comment.size() <= 1200
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.publishedAt == request.time;
+
+      allow read, update, delete: if isEmployee();
+    }
+
+    // Public documents contain display-safe fields only. Contact information
+    // is deliberately never copied into this collection.
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if ((isEmployee()) || (
+        request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && reviewId == request.auth.uid
+        && request.resource.data.verified == false
+      ))
+        && request.resource.data.keys().hasOnly([
+          'displayName', 'location', 'service', 'rating', 'comment',
+          'verified', 'publishedAt'
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 60
+        && request.resource.data.location is string
+        && request.resource.data.location.size() <= 80
+        && request.resource.data['service'] is string
+        && request.resource.data['service'].size() >= 2
+        && request.resource.data['service'].size() <= 80
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() >= 20
+        && request.resource.data.comment.size() <= 1200
+        && request.resource.data.verified is bool
+        && request.resource.data.publishedAt == request.time;
+      allow update: if isEmployee()
+        && request.resource.data.keys().hasOnly([
+          'displayName', 'location', 'service', 'rating', 'comment',
+          'verified', 'publishedAt'
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 60
+        && request.resource.data.location is string
+        && request.resource.data.location.size() <= 80
+        && request.resource.data['service'] is string
+        && request.resource.data['service'].size() >= 2
+        && request.resource.data['service'].size() <= 80
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() >= 20
+        && request.resource.data.comment.size() <= 1200
+        && request.resource.data.verified is bool
+        && request.resource.data.publishedAt == request.time;
+      allow delete: if isEmployee();
+    }
   }
 }

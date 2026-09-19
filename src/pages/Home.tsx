@@ -4,6 +4,7 @@ import TrustBar from "../components/TrustBar";
 import WhyChooseGSN from "../components/WhyChooseGSN";
 import MidCTA from "../components/MidCTA";
 import FinalCTA from "../components/FinalCTA";
+import ReviewCTA from "../components/ReviewCTA";
 
 export default function Home() {
   usePageTitle();
@@ -12,6 +13,7 @@ export default function Home() {
       <Hero />
       <TrustBar />
       <WhyChooseGSN />
+      <ReviewCTA />
       <MidCTA />
       <FinalCTA />
     </>
