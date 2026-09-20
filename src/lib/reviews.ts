@@ -5,6 +5,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  limit,
   serverTimestamp,
   setDoc,
   writeBatch,
@@ -145,6 +146,19 @@ export function subscribeToPublicReviews(callback: (reviews: PublicReview[]) => 
     return () => {};
   }
   const q = query(collection(db, "reviews"), orderBy("publishedAt", "desc"));
+  return onSnapshot(q, (snap) => callback(snap.docs.map(publicFromDoc)), () => onError?.());
+}
+
+export function subscribeToLatestPublicReviews(
+  callback: (reviews: PublicReview[]) => void,
+  maximum = 3,
+  onError?: () => void,
+) {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+  const q = query(collection(db, "reviews"), orderBy("publishedAt", "desc"), limit(maximum));
   return onSnapshot(q, (snap) => callback(snap.docs.map(publicFromDoc)), () => onError?.());
 }
 
