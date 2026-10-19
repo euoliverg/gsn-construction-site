@@ -14,8 +14,8 @@ export const BUSINESS = {
   contractor: "Gilberto da Silva Neto",
   phone: "(425) 269-9024",
   phoneHref: "tel:+14252699024",
-  phone2: "(425) 770-0937",
-  phone2Href: "tel:+14257700937",
+  phone2: "(425) 766-4127",
+  phone2Href: "tel:+14257664127",
   email: "dkgge@hotmail.com",
   region: "Seattle, Washington & Surrounding Areas",
 };
